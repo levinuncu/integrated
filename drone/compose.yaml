@@ -1,0 +1,25 @@
+services:
+  camera-pipeline:
+    # TODO: Include devices for camera
+    build:
+      context: ./camera-pipeline
+      dockerfile: ./build/Dockerfile
+    volumes:
+      - ./data/recordings:/recordings
+    environment:
+      AI_PUBLISH_ADDRESS: ${AI_PUBLISH_ADDRESS:-tcp://0.0.0.0:5555}
+      VIDEO_RECEIVER_HOST: ${VIDEO_RECEIVER_HOST:-host.docker.internal}
+      VIDEO_RECEIVER_PORT: ${VIDEO_RECEIVER_PORT:-5004}
+      DRONE_FRAME_COUNT: ${DRONE_FRAME_COUNT:-0}
+      RECORD_SEGMENT_SECONDS: ${RECORD_SEGMENT_SECONDS:-10}
+      RECORD_KEEP_SECONDS: ${RECORD_KEEP_SECONDS:-600}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  image-recognition:
+    build:
+      context: ./image-recognition
+      dockerfile: ./build/Dockerfile
+    environment:
+      CAMERA_FRAMES_ADDRESS: ${CAMERA_FRAMES_ADDRESS:-tcp://camera-pipeline:5555}
+    restart: unless-stopped
