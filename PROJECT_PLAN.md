@@ -23,38 +23,44 @@ We ensure that the drone can see, understand, and report at the deployment site.
 - Visualize the available data in a user interface with an option to download it
 
 ### Task Table
-| Task | Dependencies | Phase for parallel tasks |
-|----------|----------|--------|
-| Hardware for project logic, data transmission or communication with the base station, and data processing -> microcontroller and transmission and reception module (research and ordering) | 1-(Which microcontroller where?) | 1 |
-| Hardware for video recording -> camera and infrared sensor (research and ordering) | 1-(What is available to us: space and weight?) | 1 |
-| Obtain storage medium for video recordings |  | 1 |
-|----------|----------|--------|
-| Research on image recognition models (consider: computing power, power consumption) |  | 2 |
-| Connect and test transmission and reception module (drone/base station) |  | 2 |
-| Connect and test storage media |  | 2 |
-| Connect camera to microcontroller and test it |  | 2 |
-|----------|----------|--------|
-| Define data scope (video format, labels for models, etc.) |  | 3 |
-| Receive drone status (position) from Team 1 for e.g. starting the video recording | 1-(How is drone status received?) | 3 |
-|----------|----------|--------|
-| Define message structure for transmission |  | 4 |
-| Training of image recognition models |  | 4 |
-| Store video data on the drone (compressed) |  | 4 |
-|----------|----------|--------|
-| Store transmitted data (video and model) at the base station |  | 5 |
-| Connect camera data to model and, if necessary, retrain the models |  | 5 |
-| Connection between client/base station for UI |  | 5 |
-|----------|----------|--------|
-| Test camera functionality and data storage |  | 6 |
-| Test transmission between drone and base station |  | 6 |
-| Test classification by the models |  | 6 |
-|----------|----------|--------|
-| UI visualization of the received data |  | 7 |
-| UI download function |  | 7 |
-| Integration of our system with results from other teams | 1-(Assembly of drones) | 7 |
-|----------|----------|--------|
-| General rehearsal of functionality | 1&2-(Testing the overall functionality) | 8 |
-| Adjustments after the general rehearsal, if necessary |  | 8 |
+- **Person 1**: Image Recognition and AI Models
+- **Person 2**: Camera + IR Data Processing on the Drone (Collection + Storage)
+- **Person 3**: Transmission and Base Station Software
+
+| Task | Dependencies | Phase for parallel tasks | Responsible |
+|----------|----------|--------|---|
+| Hardware for video recording -> camera and infrared sensor (research and ordering) | 1-(What is available to us: space and weight?) | 1 | 1, 2 |
+| Obtain storage medium for video recordings |  | 1 | 2 |
+| Hardware for project logic, data transmission or communication with the base station, and data processing -> microcontroller and transmission and reception module (research and ordering) | 1-(Which microcontroller where?) | 1 | 3 |
+|----------|----------|--------|--------|
+| Research on image recognition models (consider: computing power, power consumption) |  | 2 | 1 |
+| Connect and test storage media |  | 2 | 2 |
+| Connect camera to microcontroller and test it |  | 2 | 2 |
+| Connect and test transmission and reception module (drone/base station) |  | 2 | 3 |
+|----------|----------|--------|--------|
+| Define data scope (video format, labels for models, etc.) |  | 3 | 1, 2 |
+| Receive drone status (position) from Team 1 for e.g. starting the video recording | 1-(How is drone status received?) | 3 | 3 |
+|----------|----------|--------|--------|
+| Training of image recognition models |  | 4 | 1 |
+| Store video data on the drone (compressed) |  | 4 | 2 |
+| Define message structure for transmission |  | 4 | 3 |
+|----------|----------|--------|--------|
+| Training of image recognition models (further) |  | 5 | 1 |
+| Connect camera data to model and, if necessary, retrain the models |  | 5 | 1, 2 |
+| Store transmitted data (video and model) at the base station |  | 5 | 3 |
+| Connection between client/base station for UI |  | 5 | 3 |
+|----------|----------|--------|--------|
+| Test classification by the models |  | 6 | 1 |
+| Test camera functionality and data storage |  | 6 | 2 |
+| Test transmission between drone and base station |  | 6 | 3 |
+|----------|----------|--------|--------|
+| Integration of our system with results from other teams | 1-(Assembly of drones) | 7 | 1, 2 |
+| Camera Data and Classification Improvements | | 7 | 1, 2 |
+| UI visualization of the received data |  | 7 | 3 |
+| UI download function |  | 7 | 3 |
+|----------|----------|--------|--------|
+| General rehearsal of functionality | 1&2-(Testing the overall functionality) | 8 | 1, 2, 3 |
+| Adjustments after the general rehearsal, if necessary |  | 8 | 1, 2, 3 |
 
 ## One Picture Overview
 
