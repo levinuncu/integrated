@@ -6,7 +6,7 @@ We want to record video on the drone and detect people, their body position (sta
 
 We already have:
 - [Raspberry Pi Camera Module 3 Wide](https://www.raspberrypi.com/products/camera-module-3/): RGB camera, 12 MP, 120° field of view (diagonal), about 4 g.
-- [MLX90640BAB](https://www.melexis.com/en/product/mlx90640/far-infrared-thermal-sensor-array): thermal sensor, 32 × 24 temperature values, 55° × 35° field of view, I²C.
+- [MLX90640BAB](https://www.melexis.com/en/product/mlx90640/far-infrared-ir-sensor-array): ir sensor, 32 × 24 temperature values, 55° × 35° field of view, I²C.
 
 
 ## 2. Planned pipeline
@@ -23,12 +23,12 @@ MLX90640BAB
   -> Read temperature values
   -> Detect possible heat sources
 
-AI results + thermal data + timestamps
+AI results + ir data + timestamps
   -> Create JSON result
   -> Save locally and send to base station if connected
 ```
 
-Video recording and AI processing should run at the same time. We do not need to run AI on every recorded frame. We will first try to match RGB and thermal results by time.
+Video recording and AI processing should run at the same time. We do not need to run AI on every recorded frame. We will first try to match RGB and ir results by time.
 
 ## 3. Possible software and datasets
 
@@ -54,7 +54,7 @@ Example output:
   ],
   "fire_detected": false,
   "fire_confidence": null,
-  "thermal_hotspot": true
+  "ir_hotspot": true
 }
 ```
 
