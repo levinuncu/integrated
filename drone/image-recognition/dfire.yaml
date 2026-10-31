@@ -1,0 +1,9 @@
+# Tells YOLO where the training images are 
+train: datasets/D-Fire/train/images
+val: datasets/D-Fire/val/images
+test: datasets/D-Fire/test/images
+
+# Classes that YOLO should learn
+names:
+  0: smoke
+  1: fire

@@ -8,3 +8,6 @@ __pycache__/
 # Downloaded model weights and generated results
 *.pt
 runs/
+datasets/
+
+TODO.md

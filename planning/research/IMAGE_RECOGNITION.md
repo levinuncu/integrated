@@ -15,8 +15,8 @@ We already have:
 RGB camera
   -> Record and save video
   -> Resize and prepare frames for AI
-  -> YOLOv8n: detect people (and fire with a trained model)
-  -> YOLOv8n-pose: estimate body position when needed
+  -> YOLO26n: detect people (and fire with a trained model)
+  -> YOLO26n-pose: estimate body position when needed
   -> Optional ByteTrack: count people and track movement
 
 MLX90640BAB
@@ -32,10 +32,10 @@ Video recording and AI processing should run at the same time. We do not need to
 
 ## 3. Possible software and datasets
 
-- **[YOLOv8n](https://docs.ultralytics.com/models/yolov8/)** for detecting people.   
-`n` means nano: this is the smallest YOLOv8 detection model (3.2 million parameters at 640 × 640). We want to start with a small model because the SBC has limited computing power. The pretrained model can already detect the `person` class using [COCO](https://docs.ultralytics.com/datasets/detect/coco/).
+- **[YOLO26n](https://docs.ultralytics.com/models/yolo26/)** for detecting people.
+`n` means nano: this is the smallest YOLO26 detection variant. We want to start with a small model because the SBC has limited computing power. The pretrained model can already detect the `person` class using [COCO](https://docs.ultralytics.com/datasets/detect/coco/). Performance on our SBC still needs to be measured.
 - **Fire detection:** Fire is not a standard COCO class. We need to train or fine-tune a YOLO model with fire images. A possible dataset is [D-Fire](https://github.com/gaia-solutions-on-demand/DFireDataset) (fire and smoke bounding boxes). We must test it with images from our drone, not only the dataset.
-- **[YOLOv8n-pose](https://docs.ultralytics.com/tasks/pose/)** for body keypoints. We can use the keypoints to estimate `standing` or `lying`. These labels are not direct outputs of the pretrained pose mode, so we need to define and test the rules ourselves.
+- **[YOLO26n-pose](https://docs.ultralytics.com/tasks/pose/)** for body keypoints. We can use the keypoints to estimate `standing` or `lying`. These labels are not direct outputs of the pretrained pose mode, so we need to define and test the rules ourselves.
 - **Optional [ByteTrack](https://docs.ultralytics.com/modes/track/)** to keep an ID for each detected person across frames. This may help with counting and movement detection. Movement is harder to measure because the drone itself moves.
 
 Example output:
