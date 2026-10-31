@@ -1,0 +1,27 @@
+services:
+  video-receiver:
+    build:
+      context: ./video-receiver
+      dockerfile: ./build/Dockerfile
+    volumes:
+      - ./data/recordings:/recordings
+    ports:
+      - "5004:5004/udp"
+    environment:
+      PORT: ${PORT:-5004}    
+      VIDEO_RELAY_HOST: ${VIDEO_RELAY_HOST:-media-server}
+      VIDEO_RELAY_PORT: ${VIDEO_RELAY_PORT:-5006}
+      RECORD_SEGMENT_SECONDS: ${RECORD_SEGMENT_SECONDS:-10}
+      RECORD_KEEP_SECONDS: ${RECORD_KEEP_SECONDS:-600}
+
+  media-server:
+    image: bluenviron/mediamtx:1.21.3
+    volumes:
+      - ./mediamtx.yml:/etc/mediamtx/mediamtx.yml:ro
+    ports:
+      - "8888:8888/tcp"
+      - "8889:8889/tcp"
+      - "8189:8189/udp"
+      - "8189:8189/tcp"
+    working_dir: /etc/mediamtx
+    command: ["./mediamtx.yml"]
