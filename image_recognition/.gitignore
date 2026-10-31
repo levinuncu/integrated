@@ -1,0 +1,10 @@
+# Local Python environment
+.venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Downloaded model weights and generated results
+*.pt
+runs/

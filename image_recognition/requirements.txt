@@ -1,0 +1,6 @@
+# YOLOv8 detection and pose estimation
+ultralytics>=8.3,<9
+
+# Image/video processing and numerical arrays
+opencv-python>=4.10,<5
+numpy>=1.26,<3
