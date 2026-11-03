@@ -1,5 +1,6 @@
 services:
   camera-pipeline:
+    # TODO: Include devices for camera
     build:
       context: ./camera-pipeline
       dockerfile: ./build/Dockerfile
@@ -20,5 +21,5 @@ services:
       context: ./image-recognition
       dockerfile: ./build/Dockerfile
     environment:
-      CAMERA_FRAMES_ADDRESS: ${AI_PUBLISH_ADDRESS:-tcp://camera-pipeline:5555}
+      CAMERA_FRAMES_ADDRESS: ${CAMERA_FRAMES_ADDRESS:-tcp://camera-pipeline:5555}
     restart: unless-stopped

@@ -2,6 +2,7 @@ FROM debian:bookworm-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 
+# TODO: Install needed packages for cameras
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     python3-zmq \
@@ -17,6 +18,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-COPY camera.py fake_cameras.py frame_bundle.py frame_publisher.py frame_synchronizer.py frame_wire.py main.py pipeline.py rolling_recording.py stream_destination.py ./
+COPY camera.py cameras.py fake_cameras.py frame_bundle.py frame_publisher.py frame_synchronizer.py frame_wire.py main.py pipeline.py rolling_recording.py stream_destination.py ./
 
 CMD ["python3", "main.py"]
