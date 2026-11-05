@@ -7,3 +7,6 @@ numpy>=1.26,<3
 
 # ByteTrack matching
 lap>=0.5.12,<0.6
+
+# Receive camera frames over ZeroMQ
+pyzmq>=26,<28

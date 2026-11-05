@@ -60,7 +60,7 @@ class HeatSourceDetector:
 
 # Creates a dictionary that can be written to the Image Recognition frame
 def create_record(
-    result: Results, frame_id: int, timestamp_ns: int, fps: float
+    result: Results, frame_id: int, timestamp_ns: int
 ) -> dict:
     """Convert tensor results to plain Python values for JSON."""
     # For calculation on cpu if data is on gpu
@@ -85,7 +85,9 @@ def create_record(
                     "bbox_xyxy": [round(float(x), 2) for x in box.xyxy[0].tolist()], # [left, top, right, bottom] in pixels of the original image
                     "keypoints": keypoints,
                     "posture": None, # TODO: Implement estimator for posture from keypoints
+                    "posture_confidence": None,
                     "moving": None, # TODO: Same todo
+                    "moving_confidence": None,
                 }
             )
 
@@ -94,14 +96,13 @@ def create_record(
     # TODO: Timestamp functionality needs to be examined on SBC
     timestamp = datetime.fromtimestamp(timestamp_ns / 1_000_000_000, timezone.utc)
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "frame_id": frame_id,
         "timestamp": timestamp.isoformat(timespec="milliseconds"),
         "timestamp_ns": timestamp_ns,
         "time_ms": timestamp_ns // 1_000_000,
         "image_width": width,
         "image_height": height,
-        "fps": round(fps, 2), 
         "person_count": len(persons),
         "persons": persons,
         "fire_detected": None, # TODO: Needs fire detection model
