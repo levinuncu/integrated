@@ -10,11 +10,14 @@ MODEL_DIR = Path(__file__).resolve().parent / "models"
 
 
 # Load the model weights from the directory
-def load_model(pose: bool = False) -> YOLO:
+def load_model(pose: bool = False, *, download: bool = False) -> YOLO:
     """Load detection or pose weights from the local models directory."""
     MODEL_DIR.mkdir(parents=True, exist_ok=True)
     name = "yolo26n-pose.pt" if pose else "yolo26n.pt"
-    return YOLO(str(MODEL_DIR / name))
+    path = MODEL_DIR / name
+    if not path.is_file() and not download:
+        raise FileNotFoundError(f"Missing {path}. Run webcam_demo.py --download-models first.")
+    return YOLO(str(path))
 
 
 # Builds a model that can detect persons in a frame
@@ -68,7 +71,7 @@ def create_record(
     persons = []
     if result.boxes is not None:
         for index, box in enumerate(result.boxes):
-            # Add keypoint information from yolo pose if tracked
+            # Add keypoint information when the pose model is enabled.
             # Keypoints follow COCO order: each point is [x, y, confidence]
             keypoints = None
             if result.keypoints is not None:
@@ -84,8 +87,7 @@ def create_record(
                     "confidence": round(float(box.conf.item()), 4), 
                     "bbox_xyxy": [round(float(x), 2) for x in box.xyxy[0].tolist()], # [left, top, right, bottom] in pixels of the original image
                     "keypoints": keypoints,
-                    "posture": None, # TODO: Implement estimator for posture from keypoints
-                    "posture_confidence": None,
+                    "posture": None,
                     "moving": None, # TODO: Same todo
                     "moving_confidence": None,
                 }

@@ -7,6 +7,7 @@ __pycache__/
 
 # Downloaded model weights and generated results
 *.pt
+models/mobileclip2/
 runs/
 datasets/
 

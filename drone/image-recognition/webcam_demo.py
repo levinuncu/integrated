@@ -1,15 +1,22 @@
 """Mock main: webcam frames, person detection and a local ImR ring buffer."""
 
 import argparse
+import os
 from math import isfinite
 from pathlib import Path
 from time import monotonic_ns, perf_counter, time_ns
 
 import cv2
 import numpy as np
+import torch
+
+# Avoid update checks and automatic package installs during offline operation.
+os.environ["YOLO_OFFLINE"] = "true"
+os.environ["YOLO_AUTOINSTALL"] = "false"
 
 from detector import PersonDetector, create_record, load_model
 from frame_wire import FrameMessage, RgbFrame
+from image_posture import ImagePostureClassifier
 from record_buffer import RecordBuffer
 
 
@@ -43,6 +50,44 @@ class MockCamera:
     def close(self) -> None:
         self._camera.release()
 
+
+def draw_pose_panel(preview: np.ndarray, record: dict) -> np.ndarray:
+    """Show posture and image/text similarities next to the camera image."""
+    white, muted = (235, 235, 235), (180, 180, 180)
+    blocks = []
+    for index, person in enumerate(record["persons"], 1):
+        classification = person["posture_classification"]
+        posture = person.get("posture") or "unknown"
+        color = {"standing": (100, 230, 100), "lying": (0, 165, 255)}.get(posture, white)
+        identifier = person["id"] if person.get("id") is not None else index
+
+        lines = [
+            (f"Person {identifier} | Posture: {posture}", color),
+            ("Image model: MobileCLIP2-S0", muted),
+        ]
+        scores = classification["similarities"]
+        for label in sorted(scores, key=scores.get, reverse=True):
+            lines.append((f"{label:10s}  similarity {scores[label]:.3f}", white))
+        lines.append(("Similarities are not probabilities", muted))
+        blocks.append(lines)
+
+    height, width = preview.shape[:2]
+    panel_height = 60 + sum(len(lines) * 22 + 14 for lines in blocks)
+    canvas = np.full((max(height, panel_height), width + 440, 3), 24, dtype=np.uint8)
+    canvas[:height, :width] = preview
+    x, y = width + 14, 28
+    cv2.putText(canvas, "Pose estimation", (x, y), cv2.FONT_HERSHEY_SIMPLEX, 0.65, white, 1, cv2.LINE_AA)
+    y = 58
+    if not blocks:
+        blocks = [[("No person detected", muted)]]
+    for lines in blocks:
+        for text, color in lines:
+            cv2.putText(canvas, text, (x, y), cv2.FONT_HERSHEY_SIMPLEX, 0.48, color, 1, cv2.LINE_AA)
+            y += 22
+        y += 14
+    return canvas
+
+
 # Arguments for webcam demo
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
@@ -53,6 +98,9 @@ def parse_args() -> argparse.Namespace:
     # True or False for pose estimation and ByteTrack tracking
     parser.add_argument("--pose", action="store_true", help="Use YOLO26n-pose with body keypoints")
     parser.add_argument("--track", action="store_true", help="Assign person IDs with ByteTrack")
+    parser.add_argument("--posture-margin", type=float, default=0.01,
+                        help="Minimum gap between CLIP cosine similarities (default: 0.01)")
+    parser.add_argument("--threads", type=int, default=3, help="CPU inference threads (default: 3)")
     parser.add_argument(
         "--output-dir", type=Path,
         default=Path(__file__).resolve().parents[1] / "data" / "imr_records",
@@ -71,20 +119,29 @@ def parse_args() -> argparse.Namespace:
         parser.error("--interval must be finite and positive")
     if args.keep_records <= 0:
         parser.error("--keep-records must be positive")
+    if not isfinite(args.posture_margin) or not 0 <= args.posture_margin <= 2:
+        parser.error("--posture-margin must be finite and in [0, 2]")
+    if args.threads <= 0:
+        parser.error("--threads must be positive")
     return args
 
 
 def main() -> None:
     args = parse_args()
+    torch.set_num_threads(args.threads)
+    cv2.setNumThreads(1)
 
     # Downloads models if not available
     if args.download_models:
-        load_model()
-        load_model(pose=True)
+        load_model(download=True)
+        load_model(pose=True, download=True)
         print("YOLO26n and YOLO26n-pose are ready in models/.")
         return
 
-    # Load the model before opening the webcam to avoid holding it during downloads
+    image_posture = ImagePostureClassifier(min_margin=args.posture_margin)
+    print("MobileCLIP2-S0 ready on CPU (offline).", flush=True)
+
+    # Check local model files before opening the webcam.
     # Sets up webcam demo
     detector = PersonDetector(args.confidence, pose=args.pose, track=args.track)
     camera = MockCamera(args.camera)
@@ -117,6 +174,7 @@ def main() -> None:
 
                 # Create record
                 record = create_record(result, rgb.frame_id, received_at_ns)
+                image_posture.apply(image, record)
                 records.append(record)
 
                 # Shows the webcam picture in the window
@@ -125,7 +183,7 @@ def main() -> None:
                     preview, f"FPS: {fps:.1f} | Persons: {record['person_count']}",
                     (10, 28), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2,
                 )
-                cv2.imshow(window, preview)
+                cv2.imshow(window, draw_pose_panel(preview, record))
 
             if cv2.waitKey(1) & 0xFF in (ord("q"), ord("Q"), 27):
                 break

@@ -86,9 +86,33 @@ python webcam_demo.py --interval 1 --keep-records 600
 - `--output-dir`: Ring buffer directory; defaults to `drone/data/imr_records` relative to the repository.
 - The existing `--camera`, `--confidence`, `--pose`, `--track` and `--download-models` options remain available.
 
+### Image-Based Posture Estimation
+
+`image_posture.py` uses pretrained [MobileCLIP2-S0](https://huggingface.co/timm/MobileCLIP2-S0-OpenCLIP) to compare each YOLO person crop with text descriptions of standing, lying, sitting, crouching and unclear posture. `--pose` is optional; classification uses the image crop. The preview shows the posture and image/text similarities.
+
+`prepare_posture.py` downloads the full model on a PC, encodes three text descriptions per class and exports the image encoder with the averaged text features to `models/posture.pt` (about 45.5 MB). Run the export again after changing the descriptions.
+
+Run from `drone/image-recognition` using the existing `.venv`:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements-posture.txt
+.\.venv\Scripts\python.exe webcam_demo.py --download-models
+.\.venv\Scripts\python.exe prepare_posture.py
+.\.venv\Scripts\python.exe webcam_demo.py --track
+```
+
+- `--posture-margin`: Minimum gap between the two highest similarities; default is `0.01`.
+- `--threads`: PyTorch CPU threads; default is `3`.
+- Posture remains `null` if the unclear-posture class wins, the best similarity is below `0.15`, or the gap is below `--posture-margin`.
+
+Model preparation needs internet. Normal model loading and inference run offline; missing weights cause an error. On the Pi 5, install `requirements.txt` and copy `models/yolo26n.pt` and `models/posture.pt` from the PC. Also copy `models/yolo26n-pose.pt` if using `--pose`. OpenCLIP is only needed for preparation. Person crops are processed one at a time to limit memory use.
+
+The posture classifier still needs validation on drone footage.
+
 ### JSON Format, Version 2
 
-Version 2 adds posture/movement confidence fields. Stored records omit `fps`; the processing interval is configured separately. The webcam demo still displays measured FPS in its preview.
+Version 2 includes the posture result and classification details. Stored records omit `fps`; the processing interval is configured separately. The webcam demo still displays measured FPS in its preview.
+
 ```json
 {
   "schema_version": 2,
@@ -105,29 +129,44 @@ Version 2 adds posture/movement confidence fields. Stored records omit `fps`; th
       "confidence": 0.94,
       "bbox_xyxy": [100.0, 50.0, 250.0, 400.0],
       "keypoints": null,
-      "posture": null,
-      "posture_confidence": null,
+      "posture": "standing",
       "moving": null,
-      "moving_confidence": null
+      "moving_confidence": null,
+      "posture_classification": {
+        "candidate": "standing",
+        "similarities": {
+          "standing": 0.3,
+          "lying": 0.1,
+          "sitting": 0.22,
+          "crouching": 0.19,
+          "unknown": 0.17
+        },
+        "margin": 0.08,
+        "crop_xyxy": [85, 15, 265, 435],
+        "min_margin": 0.01,
+        "min_similarity": 0.15
+      }
     }
   ],
   "fire_detected": null,
   "fire_confidence": null,
-  "ir_hotspot": null
+  "ir_hotspot": null,
+  "posture_inference_ms": 86.6
 }
 ```
 
-- `posture_confidence`: Confidence from 0 to 1 in the reported `posture`, or `null` when unavailable.
-- `moving_confidence`: Confidence from 0 to 1 in the reported `moving` state (`true` or `false`), or `null` when unavailable.
-- Both new fields currently contain `null` because posture and movement estimation are not implemented yet.
+- `posture`: `standing`, `lying`, `sitting`, `crouching`, or `null` when unclear.
+- `posture_classification`: Candidate, similarities, gap between the two best matches, crop coordinates and thresholds. Similarities are not probabilities.
+- `posture_inference_ms`: Total crop processing and posture inference time for the measurement, in milliseconds.
+- `moving` and `moving_confidence`: Not implemented yet; both contain `null`.
 - `frame_id`: RGB frame ID from the source. `MockCamera` increments it for every captured webcam frame, so IDs may have gaps between analyzed frames.
 - `timestamp`, `timestamp_ns`, `time_ms`: UTC/Unix reception time of the selected frame, before inference.
 - `image_width`, `image_height`, bounding boxes and keypoints refer to the RGB image received by the detector, including any resizing already done by the camera pipeline.
 
-Thermal heat-source detection, posture classification and movement analysis are still pending. Raw thermal measurements are not stored in ImR records yet.
+Thermal heat-source detection and movement analysis are still pending. Raw thermal measurements are not stored in ImR records yet.
 
 - [x] Define the JSON format for ImR records.
 - [ ] Agree with the team on how often to capture, analyze, save and send ImR records to the base station.
-- [ ] Add logic to detect whether a person is standing or lying (Pose Estimator).
+- [x] Add logic to detect whether a person is standing or lying (Pose Estimator).
 - [x] Prepare the datasets and keep training, validation and test data separate.
 - [ ] Train a model to detect fire in camera images with dataset D-Fire.
