@@ -2,7 +2,8 @@ import os
 
 from pathlib import Path
 
-from fake_cameras import FakeRgbCamera, FakeThermalCamera
+from cameras import RgbCamera
+from fake_cameras import FakeThermalCamera
 from pipeline import Pipeline
 from frame_publisher import FramePublisher
 from stream_destination import StreamDestination
@@ -10,7 +11,7 @@ from rolling_recording import RollingRecording
 
 
 def main() -> None:
-    rgb_camera = FakeRgbCamera(width=640, height=360)
+    rgb_camera = RgbCamera(width=640, height=360)
     thermal_camera = FakeThermalCamera()
 
     receiver_host = os.getenv("VIDEO_RECEIVER_HOST", "").strip()

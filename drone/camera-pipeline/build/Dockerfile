@@ -2,12 +2,22 @@ FROM debian:bookworm-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 
-# TODO: Install needed packages for cameras
+# Raspberry Pi package repository hinzufügen
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    gnupg \
+    && curl -fsSL https://archive.raspberrypi.com/debian/raspberrypi.gpg.key \
+    | gpg --dearmor -o /usr/share/keyrings/raspberrypi-archive-keyring.gpg \
+    && echo "deb [signed-by=/usr/share/keyrings/raspberrypi-archive-keyring.gpg] https://archive.raspberrypi.com/debian/ bookworm main" \
+    > /etc/apt/sources.list.d/raspberrypi.list
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     python3-zmq \
     python3-gi \
     python3-gst-1.0 \
+    python3-picamera2 \
     gir1.2-gstreamer-1.0 \
     gir1.2-gst-plugins-base-1.0 \
     gstreamer1.0-plugins-base \
