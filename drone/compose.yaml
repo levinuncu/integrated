@@ -4,7 +4,9 @@ services:
     build:
       context: ./camera-pipeline
       dockerfile: ./build/Dockerfile
+    privileged: true
     volumes:
+      - /run/udev:/run/udev:ro
       - ./data/recordings:/recordings
     environment:
       AI_PUBLISH_ADDRESS: ${AI_PUBLISH_ADDRESS:-tcp://0.0.0.0:5555}
