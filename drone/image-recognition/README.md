@@ -88,7 +88,7 @@ python webcam_demo.py --interval 1 --keep-records 600
 
 ### Image-Based Posture Estimation
 
-`image_posture.py` uses pretrained [MobileCLIP2-S0](https://huggingface.co/timm/MobileCLIP2-S0-OpenCLIP) to compare each YOLO person crop with text descriptions of standing, lying, sitting, crouching and unclear posture. `--pose` is optional; classification uses the image crop. The preview shows the posture and image/text similarities.
+`image_posture.py` uses pretrained [MobileCLIP2-S0](https://huggingface.co/timm/MobileCLIP2-S0-OpenCLIP) to compare each YOLO person crop with text descriptions of standing, lying, sitting, crouching and unclear posture. `--pose` is optional; classification uses the image crop. The preview shows the posture, optional tracking ID and person detection confidence (`det`) directly on each person's box. Uncertain postures appear as `unknown`. Image/text similarities remain in the JSON records; they are not shown in a side panel.
 
 `prepare_posture.py` downloads the full model on a PC, encodes three text descriptions per class and exports the image encoder with the averaged text features to `models/posture.pt` (about 45.5 MB). Run the export again after changing the descriptions.
 
@@ -100,6 +100,14 @@ Run from `drone/image-recognition` using the existing `.venv`:
 .\.venv\Scripts\python.exe prepare_posture.py
 .\.venv\Scripts\python.exe webcam_demo.py --track
 ```
+
+For drone footage, export descriptions covering overhead and oblique views from above:
+
+```powershell
+.\.venv\Scripts\python.exe prepare_posture.py --viewpoint drone
+```
+
+This overwrites `models/posture.pt` with the selected text prototypes. The default `--viewpoint generic` restores the original descriptions for webcam tests. Prompt changes require re-exporting the model. This changes the text comparisons, without training the image encoder or changing YOLO keypoint detection. Drone prompts have to be tested, once the camera and ai branch is merged.
 
 - `--posture-margin`: Minimum gap between the two highest similarities; default is `0.01`.
 - `--threads`: PyTorch CPU threads; default is `3`.

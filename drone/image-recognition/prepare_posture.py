@@ -1,5 +1,6 @@
 """Prepare MobileCLIP2 on a PC; copy the exported weights to the Pi."""
 
+import argparse
 import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -38,6 +39,35 @@ PROMPTS = {
 }
 
 
+DRONE_PROMPTS = {
+    "standing": (
+        "a drone photo of a person standing upright, viewed from above",
+        "an overhead view of a person standing on their feet",
+        "an aerial photo of a standing person, viewed obliquely from above",
+    ),
+    "lying": (
+        "a drone photo of a person lying down, viewed from above",
+        "an overhead view of a person lying on the ground",
+        "an aerial photo of a person lying on their back or side, viewed obliquely from above",
+    ),
+    "sitting": (
+        "a drone photo of a person sitting down, viewed from above",
+        "an overhead view of a person seated on the ground or on a chair",
+        "an aerial photo of a seated person, viewed obliquely from above",
+    ),
+    "crouching": (
+        "a drone photo of a person crouching, viewed from above",
+        "an overhead view of a person squatting or kneeling on the ground",
+        "an aerial photo of a crouching person, viewed obliquely from above",
+    ),
+    "unknown": (
+        "a drone photo of a partially obscured person with an unclear posture, viewed from above",
+        "an overhead view of a person whose body posture is not visible",
+        "an aerial photo of a person whose posture cannot be determined, viewed obliquely from above",
+    ),
+}
+
+
 # Image encoder model with pre calculated prototypes
 class PostureModel(torch.nn.Module):
     def __init__(self, visual: torch.nn.Module, prototypes: torch.Tensor) -> None:
@@ -51,6 +81,12 @@ class PostureModel(torch.nn.Module):
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--viewpoint", choices=("generic", "drone"), default="generic",
+                        help="Text descriptions to export (default: generic for webcam tests)")
+    args = parser.parse_args()
+    prompts = DRONE_PROMPTS if args.viewpoint == "drone" else PROMPTS
+
     import open_clip
     from huggingface_hub import hf_hub_download
     from timm.utils import reparameterize_model
@@ -70,10 +106,10 @@ def main() -> None:
         # Encode prompts
         with torch.inference_mode():
             encoded = model.encode_text(tokenizer([
-                text for prompts in PROMPTS.values() for text in prompts
+                text for descriptions in prompts.values() for text in descriptions
             ]), normalize=True)
             # Prototypes = class vectors
-            prototypes = encoded.reshape(len(PROMPTS), 3, -1).mean(dim=1)
+            prototypes = encoded.reshape(len(prompts), 3, -1).mean(dim=1)
             prototypes = torch.nn.functional.normalize(prototypes, dim=-1)
             # Create model
             image_model = PostureModel(model.visual, prototypes).eval()
@@ -83,12 +119,14 @@ def main() -> None:
             torch.testing.assert_close(exported(example), image_model(example))
 
         # Save trained model
-        metadata = json.dumps({"model": MODEL_ID, "labels": list(PROMPTS), "image_size": 256})
+        metadata = json.dumps({"model": MODEL_ID, "labels": list(prompts), "image_size": 256,
+                               "viewpoint": args.viewpoint, "prompts": prompts})
         MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
         temporary_model = MODEL_PATH.with_suffix(".tmp")
         torch.jit.save(exported, str(temporary_model), _extra_files={"metadata.json": metadata})
         temporary_model.replace(MODEL_PATH)
-    print(f"Prepared {MODEL_PATH} ({MODEL_PATH.stat().st_size / 1_000_000:.1f} MB)")
+    print(f"Prepared {MODEL_PATH} ({MODEL_PATH.stat().st_size / 1_000_000:.1f} MB), "
+          f"viewpoint={args.viewpoint}")
 
 
 if __name__ == "__main__":

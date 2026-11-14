@@ -51,41 +51,33 @@ class MockCamera:
         self._camera.release()
 
 
-def draw_pose_panel(preview: np.ndarray, record: dict) -> np.ndarray:
-    """Show posture and image/text similarities next to the camera image."""
-    white, muted = (235, 235, 235), (180, 180, 180)
-    blocks = []
-    for index, person in enumerate(record["persons"], 1):
-        classification = person["posture_classification"]
-        posture = person.get("posture") or "unknown"
-        color = {"standing": (100, 230, 100), "lying": (0, 165, 255)}.get(posture, white)
-        identifier = person["id"] if person.get("id") is not None else index
-
-        lines = [
-            (f"Person {identifier} | Posture: {posture}", color),
-            ("Image model: MobileCLIP2-S0", muted),
-        ]
-        scores = classification["similarities"]
-        for label in sorted(scores, key=scores.get, reverse=True):
-            lines.append((f"{label:10s}  similarity {scores[label]:.3f}", white))
-        lines.append(("Similarities are not probabilities", muted))
-        blocks.append(lines)
-
+def draw_posture_labels(preview: np.ndarray, record: dict) -> np.ndarray:
+    """Draw each accepted posture at its box; keep uncertain results unknown."""
     height, width = preview.shape[:2]
-    panel_height = 60 + sum(len(lines) * 22 + 14 for lines in blocks)
-    canvas = np.full((max(height, panel_height), width + 440, 3), 24, dtype=np.uint8)
-    canvas[:height, :width] = preview
-    x, y = width + 14, 28
-    cv2.putText(canvas, "Pose estimation", (x, y), cv2.FONT_HERSHEY_SIMPLEX, 0.65, white, 1, cv2.LINE_AA)
-    y = 58
-    if not blocks:
-        blocks = [[("No person detected", muted)]]
-    for lines in blocks:
-        for text, color in lines:
-            cv2.putText(canvas, text, (x, y), cv2.FONT_HERSHEY_SIMPLEX, 0.48, color, 1, cv2.LINE_AA)
-            y += 22
-        y += 14
-    return canvas
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    for person in record["persons"]:
+        posture = person.get("posture") or "unknown"
+        color = {
+            "standing": (100, 230, 100), "lying": (0, 165, 255),
+            "sitting": (255, 200, 100), "crouching": (230, 150, 230),
+        }.get(posture, (180, 180, 180))
+        left, top, right, bottom = (round(value) for value in person["bbox_xyxy"])
+        cv2.rectangle(preview, (left, top), (right, bottom), color, 2)
+        identity = f"ID {person['id']} | " if person.get("id") is not None else ""
+        text = f"{identity}{posture} | det {person['confidence']:.2f}"
+        scale = 0.5
+        (text_width, _), _ = cv2.getTextSize(text, font, scale, 1)
+        scale *= min(1.0, max(1, width - 8) / max(1, text_width))
+        (text_width, text_height), baseline = cv2.getTextSize(text, font, scale, 1)
+        label_height = text_height + baseline + 8
+        x = max(0, min(left, width - text_width - 8))
+        # Prefer above the box; at the top edge place the label inside it.
+        y = top - label_height if top - label_height >= 44 else max(44, top)
+        y = max(0, min(y, height - label_height))
+        cv2.rectangle(preview, (x, y), (x + text_width + 8, y + label_height), color, -1)
+        cv2.putText(preview, text, (x + 4, y + text_height + 4),
+                    font, scale, (0, 0, 0), 1, cv2.LINE_AA)
+    return preview
 
 
 # Arguments for webcam demo
@@ -164,8 +156,8 @@ def main() -> None:
                 image = np.frombuffer(rgb.data, dtype=np.uint8).reshape(rgb.height, rgb.width, 3)
                 image = np.ascontiguousarray(image[:, :, ::-1])  # Protocol RGB -> detector BGR
                 result = detector.detect(image)
-                # Ultralytics draws boxes, labels, confidence scores and optional keypoints
-                preview = result.plot(line_width=2, labels=True, conf=True)
+                # Keep optional keypoints; draw boxes and posture labels together below.
+                preview = result.plot(line_width=2, boxes=False, labels=False, conf=False)
 
                 # Measure time between processed frames
                 now = perf_counter()
@@ -183,7 +175,7 @@ def main() -> None:
                     preview, f"FPS: {fps:.1f} | Persons: {record['person_count']}",
                     (10, 28), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2,
                 )
-                cv2.imshow(window, draw_pose_panel(preview, record))
+                cv2.imshow(window, draw_posture_labels(preview, record))
 
             if cv2.waitKey(1) & 0xFF in (ord("q"), ord("Q"), 27):
                 break
