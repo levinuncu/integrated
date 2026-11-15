@@ -177,4 +177,33 @@ Thermal heat-source detection and movement analysis are still pending. Raw therm
 - [ ] Agree with the team on how often to capture, analyze, save and send ImR records to the base station.
 - [x] Add logic to detect whether a person is standing or lying (Pose Estimator).
 - [x] Prepare the datasets and keep training, validation and test data separate.
-- [ ] Train a model to detect fire in camera images with dataset D-Fire.
+- [x] Train a model to detect people, fire and smoke with Home-fire.
+
+## V3 - Person, Fire and Smoke Detection
+
+### Basic Structure
+
+- `prepare_fire.py` adds COCO person boxes to Home-fire images. Classes: `0=person`, `1=smoke`, `2=fire`.
+- `webcam_demo.py --fire` uses `models/homefire_best.pt` to detect all three classes with one YOLO model. MobileCLIP still classifies each person's posture.
+- The preview and JSON records include fire/smoke boxes, confidence scores and detection flags.
+
+### Dataset and Results
+
+Short D-Fire/VisDrone trials gave weak results. We chose [Home-fire](https://github.com/PengBo0/Home-fire-dataset) for its indoor scenes and fine-tuned the original COCO `yolo26n.pt`.
+
+- 3,900 training images, 1,300 validation images; 1,300 test images held back from training.
+- 35 epochs in about 8 hours on the GTX 1050, image size 640, batch size 1.
+- Best model: validation mAP50 **0.8284**, mAP50-95 **0.5426**, averaged over all three classes.
+
+Person labels were added with the COCO base model. These are validation scores; performance on drone footage still needs testing. Details are in `fire_prototype_summary.json`.
+
+### Setup and Usage
+
+Run from `drone/image-recognition` with `models/homefire_best.pt` and `models/posture.pt` available:
+
+```powershell
+.\.venv\Scripts\python.exe webcam_demo.py --fire --confidence 0.7 --interval 0.1
+```
+
+- `--confidence` filters all three classes; the demo default is `0.5`.
+- Add `--track` for person IDs. `--fire` cannot be combined with `--pose` (joint keypoints).
