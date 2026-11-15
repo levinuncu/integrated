@@ -1,4 +1,4 @@
-"""Mock main: webcam frames, person detection and a local ImR ring buffer."""
+"""Mock main: webcam persons/posture, optional smoke/fire and an ImR ring buffer."""
 
 import argparse
 import os
@@ -88,7 +88,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--interval", type=float, default=1.0, help="Seconds between inference starts (default: 1)")
     parser.add_argument("--keep-records", type=int, default=600, help="Maximum number of saved measurements (default: 600)")
     # True or False for pose estimation and ByteTrack tracking
-    parser.add_argument("--pose", action="store_true", help="Use YOLO26n-pose with body keypoints")
+    model_mode = parser.add_mutually_exclusive_group()
+    model_mode.add_argument("--pose", action="store_true", help="Use YOLO26n-pose with body keypoints")
+    model_mode.add_argument("--fire", action="store_true", help="Use homefire_best.pt for persons, smoke and fire")
     parser.add_argument("--track", action="store_true", help="Assign person IDs with ByteTrack")
     parser.add_argument("--posture-margin", type=float, default=0.01,
                         help="Minimum gap between CLIP cosine similarities (default: 0.01)")
@@ -135,9 +137,9 @@ def main() -> None:
 
     # Check local model files before opening the webcam.
     # Sets up webcam demo
-    detector = PersonDetector(args.confidence, pose=args.pose, track=args.track)
+    detector = PersonDetector(args.confidence, pose=args.pose, track=args.track, fire=args.fire)
     camera = MockCamera(args.camera)
-    window = "Person detection - Q / Esc to quit"
+    window = "Person / fire detection - Q / Esc to quit" if args.fire else "Person detection - Q / Esc to quit"
     try:
         records = RecordBuffer(args.output_dir, args.keep_records)
         print(f"Keeping {args.keep_records} measurements in {records.path}; interval: {args.interval}s")
@@ -158,6 +160,10 @@ def main() -> None:
                 result = detector.detect(image)
                 # Keep optional keypoints; draw boxes and posture labels together below.
                 preview = result.plot(line_width=2, boxes=False, labels=False, conf=False)
+                if args.fire:
+                    # Fire/smoke retain YOLO class labels and scores; posture is only for people.
+                    hazards = result[result.boxes.cls != detector.person_class]
+                    preview = hazards.plot(img=preview, line_width=2)
 
                 # Measure time between processed frames
                 now = perf_counter()
@@ -171,8 +177,11 @@ def main() -> None:
 
                 # Shows the webcam picture in the window
                 cv2.rectangle(preview, (0, 0), (preview.shape[1], 40), (0, 0, 0), -1)
+                status = f"FPS: {fps:.1f} | Persons: {record['person_count']}"
+                if args.fire:
+                    status += f" | Fire: {len(record['fire_detections'])} | Smoke: {len(record['smoke_detections'])}"
                 cv2.putText(
-                    preview, f"FPS: {fps:.1f} | Persons: {record['person_count']}",
+                    preview, status,
                     (10, 28), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2,
                 )
                 cv2.imshow(window, draw_posture_labels(preview, record))

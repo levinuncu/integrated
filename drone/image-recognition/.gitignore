@@ -9,6 +9,7 @@ __pycache__/
 *.pt
 models/mobileclip2/
 runs/
+ouptut/
 datasets/
 
 TODO.md
