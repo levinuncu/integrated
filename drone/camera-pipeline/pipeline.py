@@ -204,7 +204,7 @@ class Pipeline:
         converter = self._add("videoconvert", "ai-color-converter")
         caps_filter = self._add("capsfilter", "ai-output-format")
         caps_filter.set_property("caps", Gst.Caps.from_string(
-            "video/x-raw,format=RGB,width=320,height=180"
+            "video/x-raw,format=RGB,width=640,height=360" # Auflösung an die KI
         ))
 
         sink = self._add("appsink", "ai-frame-output")
