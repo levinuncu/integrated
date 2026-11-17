@@ -32,7 +32,7 @@ def main() -> None:
         thermal_camera=thermal_camera,
         rgb_frame_rate=10,
         thermal_frame_rate=8,
-        ai_frame_rate=2,
+        ai_frame_rate=2, # TODO: Adjust with ai code
         stream_destination=destination,
         frame_publisher=frame_publisher,
         recording=RollingRecording(

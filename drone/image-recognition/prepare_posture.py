@@ -82,7 +82,7 @@ class PostureModel(torch.nn.Module):
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--viewpoint", choices=("generic", "drone"), default="generic",
+    parser.add_argument("--viewpoint", choices=("generic", "drone"), default="drone",
                         help="Text descriptions to export (default: generic for webcam tests)")
     args = parser.parse_args()
     prompts = DRONE_PROMPTS if args.viewpoint == "drone" else PROMPTS

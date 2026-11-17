@@ -22,6 +22,8 @@ services:
     build:
       context: ./image-recognition
       dockerfile: ./build/Dockerfile
+    volumes:
+      - ./data/imr_records:/app/data/imr_records
     environment:
       CAMERA_FRAMES_ADDRESS: ${CAMERA_FRAMES_ADDRESS:-tcp://camera-pipeline:5555}
     restart: unless-stopped

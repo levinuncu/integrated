@@ -1,13 +1,28 @@
-FROM debian:bookworm-slim
 
-ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+FROM python:3.11-slim-bookworm
+
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3 \
-    python3-zmq
+    libgl1 \
+    libglib2.0-0 \
+    libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-COPY frame_wire.py main.py ./
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
 
-CMD ["python3", "main.py"]
+COPY requirements-posture.txt prepare_posture.py ./
+RUN pip install --no-cache-dir -r requirements-posture.txt
+
+COPY detector.py dfire.yaml frame_wire.py \
+     image_posture.py main.py record_buffer.py ./
+
+# Pretrained models for offline inference
+# COPY models/ ./models/
+
+# TODO: Use docker volume to persist the model data
+
+CMD ["python3", "main.py", "--download-models", "--output-dir", "/app/data/imr_records"]
