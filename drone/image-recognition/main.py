@@ -215,22 +215,22 @@ def main() -> None:
     torch.set_num_threads(args.threads)
     cv2.setNumThreads(1)
 
-if args.download_models:
-    load_model(download=True)
-    load_model(pose=True, download=True)
-    print("YOLO models are ready.", flush=True)
+    if args.download_models:
+        load_model(download=True)
+        load_model(pose=True, download=True)
+        print("YOLO models are ready.", flush=True)
 
-    subprocess.run(
-        [
-            sys.executable,
-            "prepare_posture.py",
-            "--viewpoint",
-            "drone",
-        ],
-        check=True,
-    )
+        subprocess.run(
+            [
+                sys.executable,
+                "prepare_posture.py",
+                "--viewpoint",
+                "drone",
+            ],
+            check=True,
+        )
 
-    print("All models are ready.", flush=True)
+        print("All models are ready.", flush=True)
 
     image_posture = ImagePostureClassifier(
         min_margin=args.posture_margin
