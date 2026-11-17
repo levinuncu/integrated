@@ -23,4 +23,6 @@ COPY detector.py dfire.yaml frame_wire.py \
 # Pretrained models for offline inference
 # COPY models/ ./models/
 
+# TODO: Use docker volume to persist the model data
+
 CMD ["python3", "main.py", "--download-models", "--output-dir", "/app/data/imr_records", "--preview"]
