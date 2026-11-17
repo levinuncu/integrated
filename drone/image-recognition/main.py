@@ -215,7 +215,6 @@ def main() -> None:
         load_model(download=True)
         load_model(pose=True, download=True)
         print("YOLO models are ready.")
-        return
 
     image_posture = ImagePostureClassifier(
         min_margin=args.posture_margin
