@@ -13,9 +13,6 @@ import numpy as np
 import torch
 import zmq
 
-os.environ["YOLO_OFFLINE"] = "true"
-os.environ["YOLO_AUTOINSTALL"] = "false"
-
 from detector import PersonDetector, create_record, load_model
 from frame_wire import TOPIC, FrameMessage, decode_message
 from image_posture import ImagePostureClassifier

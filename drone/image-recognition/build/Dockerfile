@@ -4,7 +4,7 @@ FROM python:3.11-slim-bookworm
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     YOLO_OFFLINE=true \
-    YOLO_AUTOINSTALL=false
+    YOLO_AUTOINSTALL=true
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1 \
@@ -22,6 +22,6 @@ COPY detector.py dfire.yaml frame_wire.py \
      image_posture.py main.py record_buffer.py ./
 
 # Pretrained models for offline inference
-COPY models/ ./models/
+# COPY models/ ./models/
 
 CMD ["python3", "main.py", "--output-dir", "/app/data/imr_records"]
