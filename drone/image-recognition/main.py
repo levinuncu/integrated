@@ -8,6 +8,9 @@ from pathlib import Path
 from threading import Event
 from time import perf_counter, time_ns
 
+import subprocess
+import sys
+
 import cv2
 import numpy as np
 import torch
@@ -17,6 +20,7 @@ from detector import PersonDetector, create_record, load_model
 from frame_wire import TOPIC, FrameMessage, decode_message
 from image_posture import ImagePostureClassifier
 from record_buffer import RecordBuffer
+import prepare_posture
 
 
 def parse_args() -> argparse.Namespace:
@@ -211,10 +215,22 @@ def main() -> None:
     torch.set_num_threads(args.threads)
     cv2.setNumThreads(1)
 
-    if args.download_models:
-        load_model(download=True)
-        load_model(pose=True, download=True)
-        print("YOLO models are ready.")
+if args.download_models:
+    load_model(download=True)
+    load_model(pose=True, download=True)
+    print("YOLO models are ready.", flush=True)
+
+    subprocess.run(
+        [
+            sys.executable,
+            "prepare_posture.py",
+            "--viewpoint",
+            "drone",
+        ],
+        check=True,
+    )
+
+    print("All models are ready.", flush=True)
 
     image_posture = ImagePostureClassifier(
         min_margin=args.posture_margin

@@ -12,8 +12,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 COPY requirements.txt ./
-
 RUN pip install --no-cache-dir -r requirements.txt
+
+COPY requirements-posture.txt prepare_posture.py ./
+RUN pip install --no-cache-dir -r requirements-posture.txt
 
 COPY detector.py dfire.yaml frame_wire.py \
      image_posture.py main.py record_buffer.py ./
