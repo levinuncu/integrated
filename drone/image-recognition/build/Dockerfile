@@ -23,4 +23,4 @@ COPY detector.py dfire.yaml frame_wire.py \
 # Pretrained models for offline inference
 # COPY models/ ./models/
 
-CMD ["python3", "main.py", "--download-models", "--output-dir", "/app/data/imr_records"]
+CMD ["python3", "main.py", "--download-models", "--output-dir", "/app/data/imr_records", "--preview"]
